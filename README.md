@@ -103,14 +103,22 @@ By default, the tool looks for `docker-compose.yml` in the **current directory**
 
 1. Place all secret env variables in the encrypted env file (e.g., `my-env-file.env`).
 2. Mark the decrypted env file as readable by the user running `compose2nix`.
-3. Run `compose2nix` with the env file path(s) and set `-include_env_files=true`:
+3. Run `compose2nix` with the env file path(s) passed to `-include_env_files`:
 
    ```
-   compose2nix --env_files=/run/agenix/my-env-file.env --include_env_files=true
+   compose2nix --include_env_files=/run/agenix/my-env-file.env
    ```
 
 > [!NOTE]
-> If you also want to ensure that you only include env files in the output Nix config, set `-env_files_only=true`.
+> Runtime env files do not need to exist on the machine running `compose2nix`. To also use a file for build-time interpolation, pass it to both `-env_files` and `-include_env_files`.
+
+`-include_env_files` applies to all generated containers. When migrating from the
+old boolean flag, replace `-env_files=secrets.env -include_env_files=true
+-env_files_only=true` with `-include_env_files=secrets.env`. Keep `-env_files`
+only for files needed for build-time interpolation. Boolean values for
+`-include_env_files` and enabled deprecated flags (`-env_files_only` and
+`-ignore_missing_env_files`) produce a migration error instead of silently
+changing behavior. Runtime-only files do not require `-ignore_missing_env_files`.
 
 #### [sops-nix](https://github.com/Mic92/sops-nix)
 
@@ -509,15 +517,15 @@ Usage of compose2nix:
   -enable_option
     	generate a NixOS module option. this allows you to enable or disable the generated module from within your NixOS config. by default, the option will be named "options.[project_name]", but you can add a prefix using the "option_prefix" flag.
   -env_files string
-    	one or more comma-separated paths to .env file(s).
+        one or more comma-separated paths to .env file(s) to interpolate at build time.
   -env_files_only
-    	only use env file(s) in the NixOS container definitions.
+        deprecated: use -include_env_files with explicit runtime paths instead.
   -generate_unused_resources
     	if set, unused resources (e.g., networks) will be generated even if no containers use them.
+  -include_env_files string
+        one or more comma-separated paths to .env file(s) to include at runtime.
   -ignore_missing_env_files
-    	if set, missing env files will be ignored.
-  -include_env_files
-    	include env files in the NixOS container definition.
+        deprecated: runtime files passed to -include_env_files need not exist at build time.
   -inputs string
     	one or more comma-separated path(s) to Compose file(s). (default "docker-compose.yml")
   -option_prefix string
